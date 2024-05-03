@@ -1,4 +1,4 @@
-## ETF Analyzer
+## ETF Evaluator
 Autogen bot that analyzes how attractive a given ETF is given the current market and macroeconomic conditions
 
 Work in progress.
