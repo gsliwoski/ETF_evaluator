@@ -270,7 +270,7 @@ if __name__ == "__main__":
     # Create the parser
     parser = argparse.ArgumentParser(description='Autogen bot that evaluates ETF given risk tolerance')
     parser.add_argument('ETF', type=str, help="The ticker symbol of the ETF to evaluate.")
-    parser.add_argument('risk', type=str, help="Risk tolerance (ex low, moderate to high, high, etc)", default="moderate to high")
-    parser.add_argument('save_file', type=str, help="Filename to save autogen chat to.", default=None)
+    parser.add_argument('--risk', type=str, help="Risk tolerance (ex low, moderate to high, high, etc)", default="moderate to high")
+    parser.add_argument('--save_file', type=str, help="Filename to save autogen chat to.", default=None)
     args = parser.parse_args()
     evaluate_etf(args.ETF, args.risk, args.save_file)
