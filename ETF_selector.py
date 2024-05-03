@@ -13,6 +13,7 @@ from typing import Annotated
 from datetime import datetime
 import requests
 from langchain_openai import ChatOpenAI
+import argparse
 
 yf.pdr_override()
 
@@ -259,5 +260,15 @@ def evaluate_etf(etf_symbol, risk = "moderate to high", save_file = "etf_evaluat
     message += f"Evaluate for the context of an investor with risk tolerance: {risk}. "
     message += f"The date of this analysis is {datetime.now().strftime('%m-%d-%Y')}"
     user_proxy.initiate_chat(manager, message=message)
-    save_chat(groupchat, save_file)
+    if save_file:
+        save_chat(groupchat, save_file)
     return groupchat
+
+if __name__ == "__main__":
+    # Create the parser
+    parser = argparse.ArgumentParser(description='Autogen bot that evaluates ETF given risk tolerance')
+    parser.add_argument('ETF', type=str, help="The ticker symbol of the ETF to evaluate.")
+    parser.add_argument('risk', type=str, help="Risk tolerance (ex low, moderate to high, high, etc)", default="moderate to high")
+    parser.add_argument('save_file', type=str, help="Filename to save autogen chat to.", default=None)
+    args = parser.parse_args()
+    evaluate_etf(args.ETF, args.risk, args.save_file)
