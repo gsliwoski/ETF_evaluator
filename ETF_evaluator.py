@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import yfinance as yf
 #from pandas_datareader import data
-import wbgapi as wb
+#import wbgapi as wb
 from langchain_community.utilities import GoogleSearchAPIWrapper
 from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_community.document_transformers import Html2TextTransformer
