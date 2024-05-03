@@ -14,16 +14,18 @@ from datetime import datetime
 import requests
 from langchain_openai import ChatOpenAI
 import argparse
+import json
 
 yf.pdr_override()
 
-FRED_API = "FRED_API_KEY"
-api_key = "OPENAI_API_KEY"
-os.environ['OPENAI_API_KEY'] = api_key
-os.environ['OAI_CONFIG_LIST'] = """[{"model": "gpt-4-turbo", "api_key": "OPENAI_API_KEY"}]"""
+all_keys = json.load(open("api_keys.json"))
+FRED_API = all_keys['FRED']
+OPENAI_API_KEY = all_keys['OPENAI']
+GOOGLE_API_KEY = all_keys['GOOGLE']
+SEI = all_keys['SEI']
+os.environ['OPENAI_API_KEY'] = OPENAI_API_KEY
+os.environ['OAI_CONFIG_LIST'] = f"""[{{"model": "gpt-4-turbo", "api_key": "{OPENAI_API_KEY}"}}]"""
 config_list = autogen.config_list_from_json("OAI_CONFIG_LIST")
-GOOGLE_API_KEY = "GOOGLE_API_KEY"
-SEI = "SEI_KEY"
 
 gpt4_config = {
     "cache_seed": 100,
