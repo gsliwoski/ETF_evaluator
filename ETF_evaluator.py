@@ -10,7 +10,7 @@ from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_community.document_transformers import Html2TextTransformer
 import numpy as np
 from typing import Annotated
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 from langchain_openai import ChatOpenAI
 import argparse
@@ -134,6 +134,19 @@ def fetch_prices_for_symbol(symbol: Annotated[str, "Stock symbol of interest"], 
 summarizer = ChatOpenAI(model="gpt-4-turbo", temperature=0.2, max_tokens=4096)
 
 @user_proxy.register_for_execution()
+@financial_expert.register_for_llm(description="Get price history of gold and silver")
+def fetch_prices_gold_and_silver(days: Annotated[int, "How many days back to look, maximum possible days is 1095"]) -> pd.DataFrame:
+    gold = yf.Ticker("GLD")
+    silver = yf.Ticker("SLV")
+    start_date = datetime.today() - timedelta(days=max(days,1095))
+    gold_data = gold.history(start=start_date)
+    silver_data = silver.history(start=start_date)
+    gold_prices = gold_data['Close'].rename("Gold").to_frame()
+    silver_prices = silver_data['Close'].rename("Silver").to_frame()
+    combined_prices = pd.concat([gold_prices, silver_prices], axis=1)
+    return combined_prices
+
+@user_proxy.register_for_execution()
 @financial_expert.register_for_llm(description="Get economic and macroeconomic data for the USA.")
 def fred_lookup(start_date: Annotated[str, "Start date of information as string in format 'YYYY-MM-DD' Must be '2023-01-01' or more recent"],
                 requested_information: Annotated[list, "All types of requested information can include one or more of the following: "
@@ -144,29 +157,28 @@ def fred_lookup(start_date: Annotated[str, "Start date of information as string 
                                                        "commodity prices"]) -> str:
     sids = {
         "employment and labor": ["UNRATE", "JTSJOL", "CIVPART", "CES0500000003"],
-        "market indicators": ["SP500", "DJIA", "NASDAQCOM", "WILL5000INDFC", "VIXCLS"],
-        "interest rates": ["FEDFUNDS", "GS10", "GS2", "DFF", "USD12MD156N"],
+        "market indicators": ["SP500", "DJIA", "NASDAQCOM", "VIXCLS"],
+        "interest rates": ["FEDFUNDS", "GS10", "GS2", "DFF", "SOFR"],
         "economic activity": ["GDPC1", "INDPRO", "DGORDER", "PAYEMS", "RSXFS"],
         "inflation and prices": ["CPIAUCSL", "PPIACO", "PCE", "CPILFESL"],
         "housing market": ["HOUST", "HSN1F", "CSUSHPISA"],
-        "consumer sentiment and spending": ["UMCSENT", "PSAVERT", "DRSFRMACBS"],
-        "business and industry": ["BUSINV", "ISM_MFG", "TOTBUSSMSA"],
+        "consumer sentiment and spending": ["UMCSENT", "PSAVERT", "DRCCLACBS"],
+        "business and industry": ["BUSINV", "TOTBUSSMSA"],
         "banking and finance": ["TOTALSL", "TOTBKCR", "USGSEC"],
-        "government and policy": ["MTSDS133FMS", "SLGTXREV", "TIC"],
-        "international indicators": ["IMPUS", "EXPGS", "EXUSEU"],
-        "commodity prices": ["GOLDAMGBD228NLBM", "DCOILWTICO"]
+        "government and policy": ["MTSDS133FMS", "QTAXTOTALQTAXCAT1USYES", "TIC"],
+        "international indicators": ["IMPGS", "EXPGS", "EXUSEU"],
+        "commodity prices": ["DCOILWTICO"]
     }
     descriptions = {
         "SP500": "S&P 500 stock market index",
         "DJIA": "Dow Jones Industrial Average stock market index",
         "NASDAQCOM": "NASDAQ Composite Index stock market index",
-        "WILL5000INDFC": "Wilshire 5000 Total Market Index - measures market capitalization",
         "VIXCLS": "CBOE Volatility Index - market volatility indicator",
         "FEDFUNDS": "Federal Funds Rate - influences all other interest rates",
         "GS10": "10-Year Treasury Constant Maturity Rate - long-term interest rates",
         "GS2": "2-Year Treasury Constant Maturity Rate - short-term interest rates",
         "DFF": "Effective Federal Funds Rate - daily federal funds rate",
-        "USD12MD156N": "LIBOR - international lending rate",
+        "SOFR": "Secured Overnight Financing Rate - International Lending Rate",
         "GDPC1": "Real Gross Domestic Product - overall economic output",
         "INDPRO": "Industrial Production Index - measures real output for industries",
         "DGORDER": "Durable Goods Orders - indicator of manufacturing health",
@@ -185,20 +197,18 @@ def fred_lookup(start_date: Annotated[str, "Start date of information as string 
         "CES0500000003": "Average Hourly Earnings - average earnings, indicative of wage inflation",
         "UMCSENT": "Consumer Sentiment Index - measures consumer confidence",
         "PSAVERT": "Personal Saving Rate - percentage of income saved by households",
-        "DRSFRMACBS": "Credit Card Delinquency Rates - financial stress indicator",
+        "DRCCLACBS": "Credit Card Delinquency Rates - financial stress indicator",
         "BUSINV": "Business Inventories - total inventories held by manufacturers, wholesalers, and retailers",
-        "ISM_MFG": "ISM Manufacturing Index - health of the manufacturing sector",
         "TOTBUSSMSA": "Total Business Sales - combined sales of all U.S. businesses",
         "TOTALSL": "Total Consumer Credit - amount of consumer credit outstanding",
         "TOTBKCR": "Commercial Bank Credit - loans issued by commercial banks",
         "USGSEC": "Assets and Liabilities of Commercial Banks - financial health of banks",
         "MTSDS133FMS": "Federal Surplus or Deficit - federal government budget balance",
-        "SLGTXREV": "State and Local Tax Revenue - financial health of state and local governments",
+        "QTAXTOTALQTAXCAT1USYES": "State and Local Tax Revenue - financial health of state and local governments",
         "TIC": "Treasury International Capital - international capital flows",
-        "IMPUS": "U.S. Imports - total value of imports, a sign of economic activity",
+        "IMPGS": "U.S. Imports - total value of imports, a sign of economic activity",
         "EXPGS": "U.S. Exports - total value of exports, reflects economic strength",
         "EXUSEU": "Exchange Rates - USD to Euro, affects multinational investments",
-        "GOLDAMGBD228NLBM": "Gold Prices - often a safe haven during market turmoil",
         "DCOILWTICO": "Crude Oil Prices - major impact on economic conditions"
     }
     errors = []
